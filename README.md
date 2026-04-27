@@ -1,3 +1,5 @@
+**Getting started?** See [SETUP.md](SETUP.md) for installation instructions.
+
 # 1 Introduction
 - Motivation
 - Define your research question
