@@ -6,9 +6,13 @@
 
 ## Motivation
 
-In Germany, roughly 20% of the population possess a smartwatch or similar device, of which the majority use it to track health data (Manz et al., 2025). However, certain demographic groups—such as older people, those with lower income, and lower physical activity levels—are less likely to own wearable devices and use them for health tracking (Manz et al., 2025).
+In Germany, roughly 20% of the population posess a smartwatch or similar device of which majority use it to track health data (Manz et al., 2025).
 
-Many more people possess a smartphone, yet lack dedicated sleep-tracking apps. This represents a gap in accessibility to sleep monitoring technology. Our application aims to bridge this gap by leveraging smartphone sensors that most people already carry.
+Why sleep tracking is essential.
+
+However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).
+
+Many more posess a phone, yet lack in apps. => Gap => Our application :D  
 
 ## Research Questions
 
