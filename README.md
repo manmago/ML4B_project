@@ -2,7 +2,7 @@
 - Motivation
 - Define your research question
 - How is this document structured
-2 Related Work
+# 2 Related Work
 - What have others done in your area of work/ to answer similar questions?
 - Discussing existing work in the context of your work
 # 3 Methodology
