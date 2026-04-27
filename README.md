@@ -3,15 +3,15 @@ Team: @Sieberuni @manmago
 
 # 1 Introduction
 - Motivation
-In Germany, roughly 20% of the population posess a smartwatch or similar device of which majority use it to track health data (Manz et al., 2025). 
-Why sleep tracking is essential.
-However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).
-Many more posess a phone, yet lack in apps.
-=> Gap => Our application :D
+In Germany, roughly 20% of the population posess a smartwatch or similar device of which majority use it to track health data (Manz et al., 2025).  
+Why sleep tracking is essential.  
+However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).  
+Many more posess a phone, yet lack in apps.  
+=> Gap => Our application :D  
 - Define your research question
-&nbsp; - Can smartphone accelerometer and gyroscope data, collected non-intrusively during nighttime, reliably classify binary sleep states (asleep vs. awake) with at least 75% accuracy?
-&nbsp; - Can we estimate subjective sleep quality and estimate total sleep duration from smartphone sensor patterns, validated against smartwatch sleep tracking data?
-&nbsp; - Can smartphone sensor data, in combination with derived sleep quality metrics, classify sleep phases (light sleep, deep sleep, potentially REM) with meaningful accuracy, and what are the physiological limitations of such classification without direct biometric signals?
+- &nbsp; Can smartphone accelerometer and gyroscope data, collected non-intrusively during nighttime, reliably classify binary sleep states (asleep vs. awake) with at least 75% accuracy?
+- &nbsp; Can we estimate subjective sleep quality and estimate total sleep duration from smartphone sensor patterns, validated against smartwatch sleep tracking data?
+- &nbsp; Can smartphone sensor data, in combination with derived sleep quality metrics, classify sleep phases (light sleep, deep sleep, potentially REM) with meaningful accuracy, and what are the physiological limitations of such classification without direct biometric signals?
 - How is this document structured
 # 2 Related Work
 - What have others done in your area of work/ to answer similar questions?
