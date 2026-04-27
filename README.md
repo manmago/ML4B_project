@@ -1,5 +1,6 @@
 **Getting started?** See [SETUP.md](SETUP.md) for installation instructions.
-**Team:** @Sieberuni @manmago
+
+**Team:** [@Sieberuni](https://github.com/Sieberuni), [@manmago](https://github.com/manmago)
 
 # 1 Introduction
 
