@@ -32,7 +32,7 @@
 - Dangers of the application of your work (for example discrimination through ML models)
 - Transparency 
 - Effects on society and environment
-P- ossible sources https://algorithmwatch.org/en/ Have a look at the "Automating Society Report"; https://ainowinstitute.org/ Have a look at this website and their publications
+- Possible sources https://algorithmwatch.org/en/ Have a look at the "Automating Society Report"; https://ainowinstitute.org/ Have a look at this website and their publications
 - Further Research: What could be next steps for other researchers (specific research questions)
 # 6 Conclusion
 - Short summary of your findings and outlook
