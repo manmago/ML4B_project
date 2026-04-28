@@ -109,14 +109,15 @@ Consequences for our work, processes, models, where we will contribute.
 # 7 Sources
 
 Ananth S. (2021). Sleep apps: current limitations and challenges. Sleep science (Sao Paulo, Brazil), 1
-&nbsp; (1), 83–86. https://doi.org/10.5935/1984-0063.20200036
+(1), 83–86.  
+&nbsp; https://doi.org/10.5935/1984-0063.20200036
 
 Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to  
 &nbsp; Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study.  
 &nbsp; JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
 
-Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392
+Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392  
 &nbsp; https://doi.org/10.1016/B978-0-444-64032-1.00025-4
 
-Sleep Cycle. (n.d.). The Sleep Cycle Advantage. 
+Sleep Cycle. (n.d.). The Sleep Cycle Advantage.  
 &nbsp; https://sleepcycle.com/partnerships/value-of-sleep-cycle. Accessed 28.04.2026.
