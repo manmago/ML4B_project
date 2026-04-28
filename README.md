@@ -27,7 +27,22 @@ Many more posess a phone, yet lack in apps. => Gap => Our application :D
 # 2 Related Work
 
 - What have others done in your area of work/ to answer similar questions?
+
+*Golden standard* of sleep tracking: **Polysomnography (PSG)**. Monitors brain activity, eye and muscle movements, heart rate, oxygen saturation, airflow, and respiratory effort (Rundo & Downey, 2019).
+
+*Wearables* rely on a combination of body movement, electrocardiogram data, blood volume changes, oxygen saturation, microphone data to predict sleep and sleep phases.
+
+*Mobile* applications are more limited in clinical sensor data, therefore lean on audio data or movement measured with accelerometer and gyroscope. Additionally, almost all apps on the market lack empirical evidence, for instance validation against the golden standard, PSG. Apps with such validation studies present weak correlation. One example is the Sleep Cycle application, which claims to use AI-powered analysis technologies (Amanth, 2021; Sleep Cycle, n.d.).
+
+*Most recent GitHub* project from 2025 for wearables by @mkucukos using Logistic Regression, Random Forest, XGBoost on accelerometer and gyroscope data, as well as body temperature, heart rate. => [**Link**](https://github.com/mkucukos/sleep-awake-detection).
+
+There appears to be a gap in reliable and accessible mobile sensor-based sleep tracking. Despite not being able to validate our work against PSG standards, the challenge is to come close to the reliability of wearable devices.
+
+When does one sleep, when is one awake? What are the different sleep phases?
+
 - Discussing existing work in the context of your work
+
+Consequences for our work, processes, models, where we will contribute.
 
 # 3 Methodology
 
@@ -93,6 +108,15 @@ Many more posess a phone, yet lack in apps. => Gap => Our application :D
 
 # 7 Sources
 
+Ananth S. (2021). Sleep apps: current limitations and challenges. Sleep science (Sao Paulo, Brazil), 1
+&nbsp; (1), 83–86. https://doi.org/10.5935/1984-0063.20200036
+
 Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to  
 &nbsp; Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study.  
 &nbsp; JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
+
+Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392
+&nbsp; https://doi.org/10.1016/B978-0-444-64032-1.00025-4
+
+Sleep Cycle. (n.d.). The Sleep Cycle Advantage. 
+&nbsp; https://sleepcycle.com/partnerships/value-of-sleep-cycle. Accessed 28.04.2026.
