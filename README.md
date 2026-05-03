@@ -12,7 +12,7 @@ Why sleep tracking is essential.
 
 However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).
 
-Many more posess a phone, yet lack in apps. => Gap => Our application :D  
+Many more posess a phone, yet lack in apps. => Gap => Our application as a solution 
 
 ## Research Questions
 
@@ -28,21 +28,24 @@ Many more posess a phone, yet lack in apps. => Gap => Our application :D
 
 - What have others done in your area of work/ to answer similar questions?
 
-*Golden standard* of sleep tracking: **Polysomnography (PSG)**. Monitors brain activity, eye and muscle movements, heart rate, oxygen saturation, airflow, and respiratory effort (Rundo & Downey, 2019).
+*Golden standard* of sleep tracking: **Polysomnography (PSG)**. Monitors brain activity, eye and muscle movements, heart rate, oxygen saturation, airflow, and respiratory effort (Rundo & Downey, 2019).  
+Researchers trained a deep neural network for sleep classification (Morokuma/Sata)
 
-*Wearables* rely on a combination of body movement, electrocardiogram data, blood volume changes, oxygen saturation, microphone data to predict sleep and sleep phases.
+*Wearables* rely on a combination of body movement, electrocardiogram data, blood volume changes, oxygen saturation, microphone data to predict sleep, and sleep phases (Source tbd).
 
 *Mobile* applications are more limited in clinical sensor data, therefore lean on audio data or movement measured with accelerometer and gyroscope. Additionally, almost all apps on the market lack empirical evidence, for instance validation against the golden standard, PSG. Apps with such validation studies present weak correlation. One example is the Sleep Cycle application, which claims to use AI-powered analysis technologies (Amanth, 2021; Sleep Cycle, n.d.).
 
-*Most recent GitHub* project from 2025 for wearables by @mkucukos using Logistic Regression, Random Forest, XGBoost on accelerometer and gyroscope data, as well as body temperature, heart rate. => [**Link**](https://github.com/mkucukos/sleep-awake-detection).
+A well-documented *GitHub project* is the [sleep-tracker](https://github.com/josephbima/sleep-tracker), using just the accelerometer and a Random Forest.   
+[The most recent project](https://github.com/mkucukos/sleep-awake-detection) from 2025 utilizes wearables and applies Logistic Regression, Random Forest,and XGBoost on accelerometer and gyroscope data, as well as body temperature, and heart rate.
 
 There appears to be a gap in reliable and accessible mobile sensor-based sleep tracking. Despite not being able to validate our work against PSG standards, the challenge is to come close to the reliability of wearable devices.
 
-When does one sleep, when is one awake? What are the different sleep phases?
+Sleep when quiet, less movement (Source) What are the different sleep phases?
 
 - Discussing existing work in the context of your work
 
 Consequences for our work, processes, models, where we will contribute.
+Related work suggests that Random Forest is the most effectve model, hence it will be considered in testing.
 
 # 3 Methodology
 
@@ -116,8 +119,12 @@ Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). C
 &nbsp; Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study.  
 &nbsp; JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
 
+Morokuma, S., Hayashi, T., Kanegae, M., Mizukami, Y., Asano, S., Kimura, I., Tateizumi, Y., Ueno, H., Ikeda, S., & Niizeki, K. (2023). Deep learning-based sleep stage classification with cardiorespiratory and body movement activities in individuals with suspected sleep disorders. Scientific reports, 13(1), 17730. https://doi.org/10.1038/s41598-023-45020-7 https://pmc.ncbi.nlm.nih.gov/articles/PMC10584883/ 
+
 Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392  
 &nbsp; https://doi.org/10.1016/B978-0-444-64032-1.00025-4
+
+Satapathy, S.K., Brahma, B., Panda, B. et al. Machine learning-empowered sleep staging classification using multi-modality signals. BMC Med Inform Decis Mak 24, 119 (2024). https://doi.org/10.1186/s12911-024-02522-2 https://link.springer.com/article/10.1186/s12911-024-02522-2
 
 Sleep Cycle. (n.d.). The Sleep Cycle Advantage.  
 &nbsp; https://sleepcycle.com/partnerships/value-of-sleep-cycle. Accessed 28.04.2026.
