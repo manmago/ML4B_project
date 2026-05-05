@@ -8,7 +8,7 @@
 
 In Germany, roughly 20% of the population posess a smartwatch or similar device of which majority use it to track health data (Manz et al., 2025).
 
-Why sleep tracking is essential.
+Sleep tracking contributes to overall sleep quality, health, and efficiency and increases the well-being of individuals (Feng et al., 2026).
 
 However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).
 
@@ -114,6 +114,11 @@ Related work suggests that Random Forest is the most effectve model, hence it wi
 Ananth S. (2021). Sleep apps: current limitations and challenges. Sleep science (Sao Paulo, Brazil), 1
 (1), 83–86.  
 &nbsp; https://doi.org/10.5935/1984-0063.20200036
+
+Feng, S., Mäntymäki, M., & Pappas, I. O. (2026). Sleep tracking: An integrative review, conceptual framework
+&nbsp; and future research agendas. Behaviour & Information Technology, 0(0), 1–31. https://doi.org/10.1080
+&nbsp; 0144929X.2026.2621789
+
 
 Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to  
 &nbsp; Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study.  
