@@ -10,9 +10,11 @@ In Germany, roughly 20% of the population posess a smartwatch or similar device 
 
 Sleep tracking contributes to overall sleep quality, health, and efficiency and increases the well-being of individuals (Feng et al., 2026).
 
-However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking (Manz et al., 2025).
+However, certain demographic groups, such as older people, people with lower income and lower physical activity levels are less likely to own a wearable device and use it for health tracking reasons (Manz et al., 2025).
 
-Many more posess a phone, yet lack in apps. => Gap => Our application as a solution 
+According to the Federal Statistical Office, roughly 98% of households own a smartphone (Statistisches Bundesamt, 2022), which presents an opportunity to introduce a bigger part of the population to accessible sleep tracking. Despite this, mobile apps made for this purpose lack empirical evidence (Amanth, 2021) and from personal experience, reliable results. 
+
+We aim to address this gap by training a ML model to classify sleep states. 
 
 ## Research Questions
 
@@ -59,13 +61,43 @@ Related work suggests that Random Forest is the most effectve model, hence it wi
 
 ## 3.2 Data Understanding and Preparation
 
-- Introduce the dataset to the reader
+### Dataset and structure
 
-- Describe structure and size of your dataset
+Primarily smartphone sensor data from gyroscope and accelerometer. For labeling, a hybrid approach with smartwatch-based sleeptracking data and manual annotations was used. Sampling rate set to 100Hz.
+
+Total recorded: x nights, y duration
+
+Each night equals a .csv file including files: 
+- Accelerometer.csv - Calibrated acceleration (x, y, z axes)
+- AccelerometerUncalibrated.csv - Raw uncalibrated acceleration
+- Gyroscope.csv - Calibrated angular velocity (x, y, z axes)
+- GyroscopeUncalibrated.csv - Raw uncalibrated angular velocity
+- TotalAcceleration.csv - Computed total acceleration magnitude
+- Metadata.csv - Recording metadata (device info, sampling rate, timezone)
+- Annotation.csv - User-provided annotations (manual sleep-wake notes)
+
+Columns: time, seconds_elapsed, x, y, z  
+Timestamps: Unix format (nanoseconds)  
+Values: SI units (m/s² for acceleration, rad/s for angular velocity)
 
 - Describe specialities
 
-- Describe how you prepare the dataset for your project
+Hybrid labeling due to failure of smartwatch to detect wake state successfully. Manual annotations override smartwatch tracking.
+
+### Dataset preparation
+
+1. Data cleaning
+- ignore or remove redundant files: TotalAcceleration.csv, AccelerometerUncalibrated.csv, GyroscopeUncalibrated.csv
+- missing data
+- outliers
+- duplicates
+- sensor-errors
+- smartwatch failure corrected by manual annotation
+2. Preprocessing
+3. Feature selection
+4. Data splitting
+5. Potential bias discussion
+
 
 ## 3.3 Modeling and Evaluation
 
@@ -112,24 +144,20 @@ Related work suggests that Random Forest is the most effectve model, hence it wi
 # 7 Sources
 
 Ananth S. (2021). Sleep apps: current limitations and challenges. Sleep science (Sao Paulo, Brazil), 1
-(1), 83–86.  
-&nbsp; https://doi.org/10.5935/1984-0063.20200036
+(1), 83–86. https://doi.org/10.5935/1984-0063.20200036
 
-Feng, S., Mäntymäki, M., & Pappas, I. O. (2026). Sleep tracking: An integrative review, conceptual framework
-&nbsp; and future research agendas. Behaviour & Information Technology, 0(0), 1–31. https://doi.org/10.1080
-&nbsp; 0144929X.2026.2621789
+Feng, S., Mäntymäki, M., & Pappas, I. O. (2026). Sleep tracking: An integrative review, conceptual framework and future research agendas. Behaviour & Information Technology, 0(0), 1–31. https://doi.org/10.10800144929X.2026.2621789
 
 
-Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to  
-&nbsp; Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study.  
-&nbsp; JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
+Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study. JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
 
-Morokuma, S., Hayashi, T., Kanegae, M., Mizukami, Y., Asano, S., Kimura, I., Tateizumi, Y., Ueno, H., Ikeda, S., & Niizeki, K. (2023). Deep learning-based sleep stage classification with cardiorespiratory and body movement activities in individuals with suspected sleep disorders. Scientific reports, 13(1), 17730. https://doi.org/10.1038/s41598-023-45020-7 https://pmc.ncbi.nlm.nih.gov/articles/PMC10584883/ 
+Morokuma, S., Hayashi, T., Kanegae, M., Mizukami, Y., Asano, S., Kimura, I., Tateizumi, Y., Ueno, H.,Ikeda, S., & Niizeki, K. (2023). Deep learning-based sleep stage classification with cardiorespiratory and body movement activities in individuals with suspected sleep disorders. Scientific reports, 13(1), 17730. https://doi.org/10.1038/s41598-023-45020-7 https://pmc.ncbi.nlm.nih.gov/articles/PMC10584883/ 
 
-Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392  
-&nbsp; https://doi.org/10.1016/B978-0-444-64032-1.00025-4
+Rundo, J. V., & Downey, R., 3rd (2019). Polysomnography. Handbook of clinical neurology, 160, 381–392 https://doi.org/10.1016/B978-0-444-64032-1.00025-4
 
 Satapathy, S.K., Brahma, B., Panda, B. et al. Machine learning-empowered sleep staging classification using multi-modality signals. BMC Med Inform Decis Mak 24, 119 (2024). https://doi.org/10.1186/s12911-024-02522-2 https://link.springer.com/article/10.1186/s12911-024-02522-2
 
-Sleep Cycle. (n.d.). The Sleep Cycle Advantage.  
-&nbsp; https://sleepcycle.com/partnerships/value-of-sleep-cycle. Accessed 28.04.2026.
+Sleep Cycle. (n.d.). The Sleep Cycle Advantage. https://sleepcycle.com/partnerships/value-of-sleep-cycle. Accessed 28.04.2026.
+
+Statistisches Bundesamt (2022). Daten aus den Laufenden Wirtschaftsrechnungen (LWR) zur Ausstattung privater Haushalte mit Informationstechnik. https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Einkommen-Konsum-Lebensbedingungen/Ausstattung-Gebrauchsgueter/Tabellen/a-infotechnik-d-lwr.html
+
