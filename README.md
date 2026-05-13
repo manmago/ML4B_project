@@ -101,11 +101,20 @@ Hybrid labeling due to failure of smartwatch to detect wake state successfully. 
 
 ## 3.3 Modeling and Evaluation
 
-- Describe the model architecture(s) you selected
+**Selected model architecture:** 
+- Top priority: Random Forest. Robust, easy to interpret, relatively fast. 
+- Comparison: XGBoost. Stronger on selected features.
+- For unsupervised exploration: K-means clustering.
 
 - Describe how you train your models
 
-- Describe how you evaluate your models/ which metrics you use
+**Describe how you evaluate your models/ which metrics you use:**
+- Preliminary: 
+    - accuracy
+    - F1-score
+    - confusion matrix
+    - recall
+    - balanced accuracy
 
 # 4 Results
 
