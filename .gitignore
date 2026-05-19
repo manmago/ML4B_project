@@ -9,6 +9,10 @@ data/raw/**/*.csv
 data/raw/*.csv
 data/processed/*.csv
 data/processed/*.parquet
+data/processed/**/*.joblib
+data/sleepdata
+models/*.joblib
+!models/sleep_model_w120_s60.joblib
 
 # Virtual environments
 .venv
