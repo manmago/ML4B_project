@@ -2,6 +2,19 @@
 
 **Team:** [@Sieberuni](https://github.com/Sieberuni), [@manmago](https://github.com/manmago)
 
+## Project Workflow
+
+1. Sync dependencies: `uv sync`
+2. Build and cache preprocessing locally: `python src/main.py preprocess`
+3. Train the baseline model: `python src/main.py train`
+4. Launch the dashboard: `streamlit run app/app.py`
+5. Explore the notebooks in `notebooks/`:
+   - `01_data_audit.ipynb`
+   - `02_preprocess_and_features.ipynb`
+   - `03_model_training_and_hypnogram.ipynb`
+
+The Streamlit app now loads only the selected night and uses cached preprocessing from `data/processed` when available. Re-run `python src/main.py preprocess` after adding new raw nights or new Huawei sleep exports.
+
 # 1 Introduction
 
 ## Motivation
@@ -87,13 +100,16 @@ Hybrid labeling due to failure of smartwatch to detect wake state successfully. 
 ### Dataset preparation
 
 1. Data cleaning
-- ignore or remove redundant files: TotalAcceleration.csv, AccelerometerUncalibrated.csv, GyroscopeUncalibrated.csv
-- missing data
-- outliers
-- duplicates
-- sensor-errors
-- smartwatch failure corrected by manual annotation
+- Ignore or remove redundant files: TotalAcceleration.csv, AccelerometerUncalibrated.csv, GyroscopeUncalibrated.csv
+
+Exploration notebook findings showed mostly synchronized and stable sensor data. To avoid over-cleaning:
+- Invalid values are coerced to missing with `pd.to_numeric(..., errors="coerce")` and only dropped when they cannot be aligned or featurized.
+- Outliers are not aggressively filtered because the window-based features are already fairly robust to short spikes, and real sleep movement can look unusual.
+- Duplicate-specific cleaning was not needed for the inspected nights.
+- Sensor errors are handled by dropping only samples or windows that remain unusable after alignment and feature extraction.
+- Smartwatch wake/sleep failure is corrected by manual annotation.
 2. Preprocessing
+- Sensors merged per night with nearest timestamp sensitive method due to few mismatches.
 3. Feature selection
 4. Data splitting
 5. Potential bias discussion
@@ -101,20 +117,22 @@ Hybrid labeling due to failure of smartwatch to detect wake state successfully. 
 
 ## 3.3 Modeling and Evaluation
 
-**Selected model architecture:** 
-- Top priority: Random Forest. Robust, easy to interpret, relatively fast. 
-- Comparison: XGBoost. Stronger on selected features.
-- For unsupervised exploration: K-means clustering.
+**Selected model architecture:**
+- Random Forest as the main supervised baseline
+- XGBoost as a comparison model on selected features
+- K-means for unsupervised exploration
 
-- Describe how you train your models
+**Training approach:**
+- Train the supervised models on window-based features derived from the merged night sensor data
+- Use the same preprocessing and feature extraction pipeline for training and prediction
 
-**Describe how you evaluate your models/ which metrics you use:**
-- Preliminary: 
-    - accuracy
-    - F1-score
-    - confusion matrix
-    - recall
-    - balanced accuracy
+**Evaluation metrics:**
+- Accuracy: simple overall baseline
+- Balanced accuracy: useful when sleep states are uneven
+- F1: useful for binary classification because it balances precision and recall
+- Precision: reliability of predicted sleep
+- Recall: how much true sleep is recovered
+- ROC-AUC: quality across thresholds
 
 # 4 Results
 
