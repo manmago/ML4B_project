@@ -113,7 +113,8 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 3. Feature selection
 4. Data splitting
 5. Potential bias discussion
-
+- Time of the day: The training inputs are motion sensors only and window_start, window_end, label, sleep_fraction, and sample_count are explicitly excluded from the features. However, due to a mostly regular sleep schedule, a slight bias in sleep recognition is possible.  
+ 
 
 ## 3.3 Modeling and Evaluation
 
