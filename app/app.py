@@ -44,7 +44,11 @@ MODE = st.sidebar.radio(
 def load_model_if_available(model_path: Path):
     if not model_path.exists():
         return None
-    return load_model_bundle(model_path)
+    try:
+        return load_model_bundle(model_path)
+    except Exception as exc:
+        st.warning(f"Could not load model artifact {model_path.name}: {exc}")
+        return None
 
 
 def discover_v1_model_artifacts(models_dir: Path) -> list[Path]:
@@ -276,8 +280,8 @@ def run_binary_classification_mode() -> None:
         st.caption("Prefer compact .joblib demo bundles; raw demo folders are local-source only and are ignored in git.")
         model_options = discover_v1_model_artifacts(MODELS_DIR)
         if not model_options:
-            st.error("No V1 model artifacts were found in the models folder.")
-            st.stop()
+            st.warning("No V1 model artifacts were found in the models folder.")
+            return
         model_path = st.selectbox("V1 model artifact", model_options, format_func=lambda path: path.name)
         window_seconds, step_seconds = parse_v1_model_spec(model_path)
         st.caption(f"Using {model_path.name} for {window_seconds}s windows and {step_seconds}s steps")
@@ -285,8 +289,8 @@ def run_binary_classification_mode() -> None:
     example_night_entries = discover_example_nights(example_dir)
     night_options = [format_example_night_label(path) for path in example_night_entries]
     if not night_options:
-        st.error("No usable example night folders were found. Put a few sample nights into the example folder.")
-        st.stop()
+        st.warning("No usable example night folders were found. Put a few sample nights into the example folder.")
+        return
 
     selected_night_id = st.sidebar.selectbox("Example night", night_options, index=0)
     selected_example_entry = example_night_entries[night_options.index(selected_night_id)]
@@ -303,7 +307,7 @@ def run_binary_classification_mode() -> None:
         )
     except Exception as exc:
         st.error(f"Failed to load example night data for {selected_night_id}: {exc}")
-        st.stop()
+        return
 
     st.caption("This view shows the trained model's predictions on a demo night. Reference labels may be missing for some nights, which only affects the comparison overlay.")
 
@@ -315,8 +319,6 @@ def run_binary_classification_mode() -> None:
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
         st.subheader(f"Night {selected_night_id}")
         st.write(f"Label source: {night_bundle.label_source.source}")
-        if night_bundle.label_source.source == "none":
-            st.info("No reference labels found for this demo night; model predictions are still shown.")
         st.write(f"Samples: {len(night_frame):,}")
         st.write(f"Time span: {night_frame['time'].min()} to {night_frame['time'].max()}")
         display_frame = downsample_for_plot(night_frame[[column for column in ["time", "accelerometer_magnitude", "gyroscope_magnitude", "label"] if column in night_frame.columns]], max_points=1200)
@@ -398,10 +400,14 @@ def run_binary_classification_mode() -> None:
         raw_windows_frame = prediction_frame[[column for column in ["window_start", "window_end", "sleep_probability", "predicted_label", "label", "sleep_fraction", "sample_count"] if column in prediction_frame.columns]]
         return prediction_frame, demo_prediction_frame, magnitude_figure, hypnogram_figure, raw_windows_frame
 
-    prediction_frame, demo_prediction_frame, magnitude_figure, hypnogram_figure, raw_windows_frame = run_centered_visible_spinner(
-        "Loading remaining widgets...",
-        build_lower_widgets,
-    )
+    try:
+        prediction_frame, demo_prediction_frame, magnitude_figure, hypnogram_figure, raw_windows_frame = run_centered_visible_spinner(
+            "Loading remaining widgets...",
+            build_lower_widgets,
+        )
+    except Exception as exc:
+        st.error(f"Failed to build prediction widgets: {exc}")
+        return
 
     chart_col_1, chart_col_2 = st.columns(2)
 
@@ -564,8 +570,8 @@ def run_sleep_phase_mode() -> None:
     example_dir = Path(st.sidebar.text_input("Example nights folder", value=str(EXAMPLE_DIR)))
     nights = find_nights(example_dir)
     if not nights:
-        st.error(f"Keine Aufnahmen gefunden in `{example_dir.resolve()}`")
-        st.stop()
+        st.warning(f"Keine Aufnahmen gefunden in `{example_dir.resolve()}`")
+        return
 
     selected_name = st.selectbox("Aufnahme auswählen", list(nights.keys()))
     selected_path = nights[selected_name]
@@ -614,7 +620,15 @@ def run_sleep_phase_mode() -> None:
         st.dataframe(pd.DataFrame(rows).set_index("Aufnahme"), width='stretch')
 
 
-if MODE == "V1: Binary classification":
-    run_binary_classification_mode()
-else:
-    run_sleep_phase_mode()
+def main() -> None:
+    try:
+        if MODE == "V1: Binary classification":
+            run_binary_classification_mode()
+        else:
+            run_sleep_phase_mode()
+    except Exception as exc:
+        st.error("The app failed to start. Please check the repository assets and model files.")
+        st.exception(exc)
+
+
+main()
