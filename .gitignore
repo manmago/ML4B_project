@@ -7,12 +7,17 @@ wheels/
 *.egg-info
 data/raw/**/*.csv
 data/raw/*.csv
+data/example_nights/**
+!data/example_nights/
+!data/example_nights/README.md
+!data/example_nights/*.joblib
 data/processed/*.csv
 data/processed/*.parquet
 data/processed/**/*.joblib
 data/sleepdata
 models/*.joblib
 !models/sleep_model_w120_s60.joblib
+sleep_model.pkl
 
 # Virtual environments
 .venv
