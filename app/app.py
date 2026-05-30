@@ -36,7 +36,7 @@ st.set_page_config(page_title="ML4B Sleep Hypnogram", layout="wide")
 
 MODE = st.sidebar.radio(
     "Model mode",
-    ["V1: Binary classification", "Final: Sleep phases"],
+    ["Sleep phases", "Early version: Binary classification"],
     index=0,
 )
 
@@ -154,6 +154,51 @@ def load_sleep_phase_features(source: Path) -> pd.DataFrame:
             frame = payload.copy()
         else:
             raise TypeError(f"Unsupported example night payload: {type(payload)!r}")
+
+        # If the payload contains raw per-sample accelerometer readings but
+        # not precomputed epoch features, aggregate into epoch-level
+        # features (mean_mag, std_mag, energy, activity_count, ...).
+        raw_accel_cols = {"accelerometer_x", "accelerometer_y", "accelerometer_z"}
+        if "mean_mag" not in frame.columns and raw_accel_cols.issubset(set(frame.columns)):
+            epoch_sec = DEFAULT_WINDOW_SECONDS if 'DEFAULT_WINDOW_SECONDS' in globals() else 30
+            # compute per-sample magnitude
+            mag = np.sqrt(frame["accelerometer_x"].values ** 2 + frame["accelerometer_y"].values ** 2 + frame["accelerometer_z"].values ** 2)
+            # derive per-sample elapsed seconds if available, otherwise approximate
+            if "seconds_elapsed" in frame.columns:
+                seconds = frame["seconds_elapsed"].astype(float).values
+            elif "time_ns" in frame.columns:
+                t0 = pd.to_numeric(frame["time_ns"].iloc[0])
+                seconds = (pd.to_numeric(frame["time_ns"]).values - t0) / 1e9
+            else:
+                # fallback: assume 100 Hz
+                seconds = np.arange(len(frame)) / 100.0
+
+            epoch_idx = (seconds // epoch_sec).astype(int)
+            records = []
+            for e, group_idx in enumerate(sorted(set(epoch_idx))):
+                mask = epoch_idx == group_idx
+                if not np.any(mask):
+                    continue
+                g_mag = mag[mask]
+                # use first sample's time for epoch timestamp
+                time_ns_vals = frame.loc[mask, "time_ns"] if "time_ns" in frame.columns else None
+                records.append(
+                    {
+                        "epoch": int(e),
+                        "time_ns": int(time_ns_vals.iloc[0]) if time_ns_vals is not None else None,
+                        "seconds": float(seconds[mask][0]),
+                        "mean_mag": float(np.mean(g_mag)),
+                        "std_mag": float(np.std(g_mag)),
+                        "energy": float(np.mean(g_mag ** 2)),
+                        "activity_count": float(np.sum(np.abs(np.diff(g_mag)))),
+                        "iqr": float(np.percentile(g_mag, 75) - np.percentile(g_mag, 25)),
+                        "max_mag": float(np.max(g_mag)),
+                        "log_energy": float(np.log1p(np.mean(g_mag ** 2))),
+                    }
+                )
+            frame = pd.DataFrame(records)
+            if not frame.empty and frame["time_ns"].notna().any():
+                frame["datetime"] = pd.to_datetime(frame["time_ns"], unit="ns", utc=True).dt.tz_convert("Europe/Berlin")
 
         if "time_ns" not in frame.columns and "time" in frame.columns:
             frame = frame.copy()
@@ -471,8 +516,25 @@ def run_sleep_phase_mode() -> None:
         return nights
 
     def heuristic_labels(df):
-        ac = df["activity_count"].values
-        pct = ac.argsort().argsort() / len(df)
+        # Ensure we have a sensible per-epoch activity signal. If the
+        # precomputed `activity_count` is missing, try to derive a proxy
+        # from available magnitude columns (`mean_mag` or
+        # `accelerometer_magnitude`). Fall back to zeros.
+        if "activity_count" in df.columns:
+            ac = df["activity_count"].values
+        elif "mean_mag" in df.columns:
+            mag = df["mean_mag"].values
+            diffs = np.abs(np.diff(mag, prepend=mag[0]))
+            ac = diffs
+        elif "accelerometer_magnitude" in df.columns:
+            mag = df["accelerometer_magnitude"].values
+            diffs = np.abs(np.diff(mag, prepend=mag[0]))
+            ac = diffs
+        else:
+            ac = np.zeros(len(df))
+
+        # Rank-normalise activity to get a simple percentile-based heuristic
+        pct = ac.argsort().argsort() / max(1, len(df))
         labels = np.zeros(len(df), dtype=int)
         pos = np.linspace(0, 1, len(df))
         for i in range(len(df)):
@@ -492,8 +554,34 @@ def run_sleep_phase_mode() -> None:
         frames = []
         for p in paths:
             df = load_sleep_phase_features(Path(p))
+            if df.empty:
+                continue
+
+            # Ensure feature columns exist. If missing, try to derive
+            # reasonable fallbacks so the training step does not fail.
+            def ensure_feature(col):
+                if col in df.columns:
+                    return
+                if col == "activity_count":
+                    if "mean_mag" in df.columns:
+                        mag = df["mean_mag"].values
+                        df["activity_count"] = np.abs(np.diff(mag, prepend=mag[0]))
+                    elif "accelerometer_magnitude" in df.columns:
+                        mag = df["accelerometer_magnitude"].values
+                        df["activity_count"] = np.abs(np.diff(mag, prepend=mag[0]))
+                    else:
+                        df["activity_count"] = 0.0
+                else:
+                    # For other numeric features, fill with zeros if missing
+                    df[col] = 0.0
+
+            for col in FEATURE_COLS:
+                ensure_feature(col)
+
             df["stage"] = heuristic_labels(df)
             frames.append(df)
+        if not frames:
+            raise RuntimeError("No training frames found when building the sleep-phase model. Check example night inputs.")
         combined = pd.concat(frames, ignore_index=True)
         X = combined[FEATURE_COLS].values
         y = combined["stage"].values
