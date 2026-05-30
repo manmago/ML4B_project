@@ -710,7 +710,7 @@ def run_sleep_phase_mode() -> None:
 
 def main() -> None:
     try:
-        if MODE == "V1: Binary classification":
+        if MODE == "Early version: Binary classification":
             run_binary_classification_mode()
         else:
             run_sleep_phase_mode()
