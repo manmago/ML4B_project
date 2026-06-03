@@ -38,22 +38,26 @@ A well-documented *GitHub project* is the [sleep-tracker](https://github.com/jos
 
 There appears to be a gap in reliable and accessible mobile sensor-based sleep tracking. Despite not being able to validate our work against PSG standards, the challenge is to come close to the reliability of wearable devices.
 
-Sleep when quiet, less movement (Source) What are the different sleep phases?
-
-- Discussing existing work in the context of your work
-
-Consequences for our work, processes, models, where we will contribute.
-Related work suggests that Random Forest is the most effectve model, hence it will be considered in testing.
-
 # 3 Methodology
 
 ## 3.1 General Methodology
 
-- How did you proceed to achieve your project goals? 
+The project did not undergo a linear process, there was a lot of jumping back and forth between different phases. Code was continuously changed. The best documentation of the process would be the activity tab.
 
-- Describe which steps you have undertaken
+**Recording**  
+We used the Sensor Logger mobile application to record sensor data. Since sleep phases correlate with movement, we decided to use the accelerometer and gyroscope sensors to record our movement during sleep.   
+The recordings were started 30mins before deciding to put away the phone and go to sleep and lasted the entire night until we would wake up and turn off the recording approx. 10mins later. This was due to our first phase, the binary sleep-wake detection, so that the first models had enough sensor data of wake stages.  
+In total, contributor manmago recorded 5-10 nights. 
 
-- Aim: Others should understand your research process
+**Exploration**
+Due to time pressure, exploration in notebooks/* is limited to mostly data preparation.
+
+**Labeling**  
+Labeling for the binary model went different than planned. Contributor manmago used a Huawei SmartWatch and the associated Health App to track sleeping stages to use for labeling. Unfortunately, when requesting the data, only a small selection of the nights needed were provided. The rest of the recorded nights with sleep classification from the app were never delivered, even after multiple requests.  
+Therefore, a fallback mechanism was used and merged with the labels from the health app provider. It's less rigorous, however the times of "going to sleep" and "waking up" were manually added in the Annotations.csv and later transferred to a uniform format. This will further be discussed in the limitations chapter. 
+
+**Modeling**
+For modeling, the best fit based on related work seemed to be a Random Forest. We trained one model with the nights recorded from manmago and the corresponding labeling. The resulting model/sleep_model_w120_s60.joblib was shown, evaluated and tweaked with in the streamlit app which is the binary mode you can see in the current app.
 
 ## 3.2 Data Understanding and Preparation
 
@@ -76,8 +80,7 @@ Columns: time, seconds_elapsed, x, y, z
 Timestamps: Unix format (nanoseconds)  
 Values: SI units (m/s² for acceleration, rad/s for angular velocity)
 
-- Describe specialities
-
+**Specialities**  
 Hybrid labeling due to failure of smartwatch to detect wake state successfully. Manual annotations override smartwatch tracking.
 
 ### Dataset preparation
@@ -103,8 +106,6 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 
 **Selected model architecture:**
 - Random Forest as the main supervised baseline
-- XGBoost as a comparison model on selected features
-- K-means for unsupervised exploration
 
 **Training approach:**
 - Train the supervised models on window-based features derived from the merged night sensor data
@@ -134,23 +135,31 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 
 - Now its time to discuss your results/ artifacts/ app 
 
-- Show the limitations : e.g. missing data, limited training ressources/ GPU availability in Colab, limitaitons of the app
+**Limitations**
+High expectations in the beginning and issues in the middle of the project permanently changed the efficiency of the artifact.  
+1. (Partially) missing "grounded" labeling data: This is the biggest limitation. Even the binary model is impaired due to this. Evaluation of the models' performance is challenging. 
+2. Raw nights are ~300MB's big: Sample size and demo size is small. 
+3. There is also no option to upload a night recorded to the Streamlit app: You would have to do this locally instead.  
+4. Inaccuracy on different mattresses or with partners: The sensor data was recorded on 2 beds and mattresses with no other person present. Results could vary a lot given other circumstances. 
 
-- Discuss your work from an ethics perspective:
+**Ethics, effects on society and environment**
+There are no known concerns regarding ethics. At best, the app could provide beneficial health data for better living. Since there is no option to upload sleep data, privacy risk is non-existent. 
+TODO
 
-- Dangers of the application of your work (for example discrimination through ML models)
+**Danger**
+Discrimination could happen in people who are limited in movement or have a lower body weight/mattress hardness ratio. They could experience worse results.  
 
 - Transparency 
-
-- Effects on society and environment
-
 - Possible sources https://algorithmwatch.org/en/ Have a look at the "Automating Society Report"; https://ainowinstitute.org/ Have a look at this website and their publications
 
 - Further Research: What could be next steps for other researchers (specific research questions)
 
 # 6 Conclusion
 
-- Short summary of your findings and outlook
+Based on movement during sleep, the app can estimate your sleep and wake stages. It can also predict the different sleep phases light, deep and REM. The binary mode shows an early experimental approach, while the multi-phase mode depicts a user-friendly UI and better  
+Facing hardships, this project was an experimental first try at creating an ML-based app. The results did not meet the expectations, yet many things about project and processes were learned. We learned how to build a simple app in Streamlit and what it takes to train a model. 
+The resulting models and app are limited in their intention and should not be perceived as final or functional, yet they serve their purpose as a first version or a demonstration of what a similar artifact should provide. 
+The artifact we built can be used as a baseline or inspiration for similar projects. 
 
 # 7 Sources
 
