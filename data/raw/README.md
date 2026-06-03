@@ -1,5 +1,15 @@
 # Raw data files
 
+Die Sensordaten sind hier verfügbar:
+
+https://drive.google.com/drive/folders/1aFBSIv5vDCq0KVVvf9WHo5APG2wJ_4VP?usp=sharing
+
+data/ Ordner herunterladen, entpacken und in den ML Ordner legen.
+Dann: python -m streamlit run app.py
+
+
+
+
 Contains the exported folders from each recorded sleep session with SensorLogger. 
 Each folder is one night, named in the format: "yyy-mm-dd_hh-mm-ss".
 Inside are csv files:
