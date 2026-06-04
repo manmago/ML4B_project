@@ -2,7 +2,7 @@
 
 Die Sensordaten sind hier verfügbar:
 
-https://drive.google.com/drive/folders/1aFBSIv5vDCq0KVVvf9WHo5APG2wJ_4VP?usp=sharing
+https://drive.google.com/drive/folders/180HPd1Lad1mk09sIt1wbwSgA_oZzyNtU?usp=sharing
 
 data/ Ordner herunterladen, entpacken und in den ML Ordner legen.
 Dann: python -m streamlit run app.py
