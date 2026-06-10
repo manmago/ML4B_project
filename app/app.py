@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib
-import pickle
 import time
 import sys
 import re
@@ -121,8 +120,6 @@ def load_sleep_phase_features_from_csv(csv_path: str) -> pd.DataFrame:
         dtype={"time": "int64", "seconds_elapsed": "float32", "x": "float32", "y": "float32", "z": "float32"},
     )
     for i, chunk in enumerate(reader):
-        if len(chunk) < (30 * 100) // 2:
-            break
         mag = np.sqrt(chunk["x"].values ** 2 + chunk["y"].values ** 2 + chunk["z"].values ** 2)
         diffs = np.abs(np.diff(mag))
         records.append(
@@ -490,7 +487,6 @@ def run_sleep_phase_mode() -> None:
     from sklearn.preprocessing import StandardScaler
 
     EXAMPLE_DIR = EXAMPLE_NIGHTS_DIR
-    MODEL_FILE = Path("sleep_model.pkl")
     EPOCH_SEC = 30
     SAMPLE_HZ = 100
     EPO_SAMPLES = EPOCH_SEC * SAMPLE_HZ
@@ -549,8 +545,6 @@ def run_sleep_phase_mode() -> None:
 
     @st.cache_resource(show_spinner="Modell laden …")
     def get_model(paths: tuple):
-        if MODEL_FILE.exists():
-            return pickle.load(open(MODEL_FILE, "rb"))
         frames = []
         for p in paths:
             df = load_sleep_phase_features(Path(p))
@@ -588,7 +582,6 @@ def run_sleep_phase_mode() -> None:
         scaler = StandardScaler()
         clf = RandomForestClassifier(n_estimators=300, max_depth=10, class_weight="balanced", random_state=42, n_jobs=-1)
         clf.fit(scaler.fit_transform(X), y)
-        pickle.dump((scaler, clf), open(MODEL_FILE, "wb"))
         return scaler, clf
 
     def predict_stages(df, scaler, clf):

@@ -6,12 +6,10 @@ from sklearn.preprocessing import StandardScaler
 import plotly.graph_objects as go
 import plotly.express as px
 from pathlib import Path
-import pickle
 
 st.set_page_config(page_title="Schlafanalyse", page_icon="🌙", layout="wide")
 
 DATA_DIR    = Path("data")
-MODEL_FILE  = Path("sleep_model.pkl")
 EPOCH_SEC   = 30
 SAMPLE_HZ   = 100
 EPO_SAMPLES = EPOCH_SEC * SAMPLE_HZ
@@ -43,7 +41,6 @@ def load_features(csv_path: str) -> pd.DataFrame:
         dtype={"time":"int64","seconds_elapsed":"float32",
                "x":"float32","y":"float32","z":"float32"})
     for i, chunk in enumerate(reader):
-        if len(chunk) < EPO_SAMPLES // 2: break
         mag   = np.sqrt(chunk["x"].values**2+chunk["y"].values**2+chunk["z"].values**2)
         diffs = np.abs(np.diff(mag))
         records.append({
@@ -72,8 +69,6 @@ def heuristic_labels(df):
 
 @st.cache_resource(show_spinner="Modell laden …")
 def get_model(paths: tuple):
-    if MODEL_FILE.exists():
-        return pickle.load(open(MODEL_FILE,"rb"))
     frames = []
     for p in paths:
         df = load_features(p)
@@ -86,7 +81,6 @@ def get_model(paths: tuple):
     clf    = RandomForestClassifier(n_estimators=300,max_depth=10,
                 class_weight="balanced",random_state=42,n_jobs=-1)
     clf.fit(scaler.fit_transform(X), y)
-    pickle.dump((scaler,clf), open(MODEL_FILE,"wb"))
     return scaler, clf
 
 def predict_stages(df, scaler, clf):
