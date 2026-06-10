@@ -141,6 +141,7 @@ High expectations in the beginning and issues in the middle of the project perma
 2. Raw nights are ~300MB's big: Sample size and demo size is small. The raw demo night added had to be converted into a compressed `DEMO.joblib` bundle, because the uncompressed version was too large for GitHub. We ended up uploading the 3x compressed version, which keeps it below the hard 100MB limit. Git LFS as an alternative did not work, there were complications with the Streamlit app.
 3. There is also no option to upload a night recorded to the Streamlit app: You would have to do this locally instead. 
 4. Combined, only one night to demonstrate the app and models is available. This night also does not have health app sleep labels, which makes the project hard to evaluate. 
+5. There seems to be a bug regarding the amount of time slept and in the different sleep phases. Not shown correctly.
 5. Inaccuracy on different mattresses or with partners: The sensor data was recorded on 2 beds and mattresses with no other person present. Results could vary a lot given other circumstances. 
 
 **Ethics, effects on society and environment**
