@@ -22,10 +22,11 @@ for path in (ROOT, SRC):
         sys.path.insert(0, str(path))
 
 from ml4b.config import DEFAULT_STEP_SECONDS, DEFAULT_WINDOW_SECONDS, EXAMPLE_NIGHTS_DIR, MODELS_DIR, SLEEPDATA_DIR
+from ml4b.io import load_manual_labels
 from ml4b.model import load_model_bundle
 import ml4b.pipeline as pipeline
 from ml4b.preprocess import NightFrameBundle, add_signal_magnitudes
-from ml4b.labels import NightLabelSource
+from ml4b.labels import NightLabelSource, apply_binary_labels, resolve_label_source_for_night
 
 pipeline = importlib.reload(pipeline)
 
@@ -85,29 +86,73 @@ def format_example_night_label(path: Path) -> str:
     return path.stem if path.suffix == ".joblib" else path.name
 
 
+def get_example_manual_labels_path(example_dir: Path) -> Path:
+    return example_dir / "manual-labels.csv"
+
+
+def apply_example_manual_labels(bundle: NightFrameBundle, manual_labels_path: Path) -> NightFrameBundle:
+    if not manual_labels_path.exists() or bundle.frame.empty:
+        return bundle
+
+    manual_labels = load_manual_labels(manual_labels_path)
+    if manual_labels.empty:
+        return bundle
+
+    label_night_id = bundle.night_id
+    if label_night_id == "DEMO" and (manual_labels["night_id"] == "app-demo-night").any():
+        label_night_id = "app-demo-night"
+
+    night_start = bundle.frame["time"].min() if "time" in bundle.frame.columns else None
+    night_end = bundle.frame["time"].max() if "time" in bundle.frame.columns else None
+    label_source = resolve_label_source_for_night(
+        label_night_id,
+        night_start,
+        night_end,
+        manual_labels,
+        pd.DataFrame(),
+    )
+    if not label_source.intervals:
+        return bundle
+
+    labeled_frame = apply_binary_labels(bundle.frame, label_source.intervals)
+    return NightFrameBundle(
+        night_id=bundle.night_id,
+        frame=labeled_frame,
+        metadata=bundle.metadata,
+        label_source=label_source,
+    )
+
+
 @st.cache_data(show_spinner=False)
-def load_example_night_bundle(example_entry: Path, sleepdata_dir: Path) -> NightFrameBundle:
+def load_example_night_bundle(example_entry: Path, sleepdata_dir: Path, manual_labels_path: Path) -> NightFrameBundle:
     if example_entry.suffix == ".joblib":
         payload = joblib.load(example_entry)
         if isinstance(payload, NightFrameBundle):
-            return payload
+            return apply_example_manual_labels(payload, manual_labels_path)
         if hasattr(payload, "frame"):
-            return NightFrameBundle(
+            bundle = NightFrameBundle(
                 night_id=getattr(payload, "night_id", example_entry.stem),
                 frame=payload.frame,
                 metadata=getattr(payload, "metadata", {}),
                 label_source=getattr(payload, "label_source", NightLabelSource("example", [])),
             )
+            return apply_example_manual_labels(bundle, manual_labels_path)
         if isinstance(payload, pd.DataFrame):
-            return NightFrameBundle(
+            bundle = NightFrameBundle(
                 night_id=example_entry.stem,
                 frame=payload,
                 metadata={},
                 label_source=NightLabelSource("example", []),
             )
+            return apply_example_manual_labels(bundle, manual_labels_path)
         raise TypeError(f"Unsupported example night payload: {type(payload)!r}")
 
-    return pipeline.load_or_build_night_frame(example_entry.name, raw_dir=example_entry.parent, sleepdata_dir=sleepdata_dir)
+    return pipeline.load_or_build_night_frame(
+        example_entry.name,
+        raw_dir=example_entry.parent,
+        sleepdata_dir=sleepdata_dir,
+        manual_labels_path=manual_labels_path,
+    )
 
 
 @st.cache_data(show_spinner=False)
@@ -319,6 +364,7 @@ def run_binary_classification_mode() -> None:
         st.header("Workspace")
         sleepdata_dir = Path(st.text_input("Sleep export folder", value=str(SLEEPDATA_DIR)))
         example_dir = Path(st.text_input("Example nights folder", value=str(EXAMPLE_NIGHTS_DIR)))
+        example_labels_path = get_example_manual_labels_path(example_dir)
         st.caption("Prefer compact .joblib demo bundles; raw demo folders are local-source only and are ignored in git.")
         model_options = discover_v1_model_artifacts(MODELS_DIR)
         if not model_options:
@@ -337,7 +383,11 @@ def run_binary_classification_mode() -> None:
     selected_night_id = st.sidebar.selectbox("Example night", night_options, index=0)
     selected_example_entry = example_night_entries[night_options.index(selected_night_id)]
     def build_upper_widgets():
-        night_bundle = load_example_night_bundle(selected_example_entry, sleepdata_dir=sleepdata_dir)
+        night_bundle = load_example_night_bundle(
+            selected_example_entry,
+            sleepdata_dir=sleepdata_dir,
+            manual_labels_path=example_labels_path,
+        )
         night_frame = add_signal_magnitudes(night_bundle.frame)
         model_bundle = load_model_if_available(model_path)
         return night_bundle, night_frame, model_bundle
@@ -351,7 +401,7 @@ def run_binary_classification_mode() -> None:
         st.error(f"Failed to load example night data for {selected_night_id}: {exc}")
         return
 
-    st.caption("This view shows the trained model's predictions on a demo night. Reference labels may be missing for some nights, which only affects the comparison overlay.")
+    st.caption("This view shows the trained model's predictions on a demo night. Reference labels are loaded from example_nights/manual-labels.csv when available.")
 
     if model_bundle is None:
         st.error(f"Could not load the selected model artifact: {model_path.name}")

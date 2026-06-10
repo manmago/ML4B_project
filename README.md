@@ -12,8 +12,9 @@ We started off with binary sleep-wake classification and then expanded the scope
 
 The Streamlit demo uses compact example-night bundles in `data/example_nights/` so the app can load and display demo nights without shipping the raw CSV source folders in GitHub.
 
-Here you will find a short **tutorial** for our app:
+Here you will find a short **tutorial** for our app. Please note that using the app locally will lead to better results.
 
 ## Tutorial
 
 Open our [Streamlit app](https://ml4b-sleep-classification.streamlit.app/).
+

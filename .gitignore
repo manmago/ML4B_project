@@ -10,6 +10,7 @@ data/raw/*.csv
 data/example_nights/**
 !data/example_nights/
 !data/example_nights/README.md
+!data/example_nights/manual-labels.csv
 !data/example_nights/*.joblib
 data/processed/*.csv
 data/processed/*.parquet
