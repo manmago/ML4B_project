@@ -12,6 +12,9 @@ from .io import get_night_time_bounds, load_metadata, load_night_sensor_bundle
 from .labels import NightLabelSource, apply_binary_labels, resolve_label_source_for_night
 
 
+JOBLIB_COMPRESSION_LEVEL = 3
+
+
 @dataclass(frozen=True)
 class NightFrameBundle:
     night_id: str
@@ -107,7 +110,7 @@ def prepare_night_frame(
 def save_night_frame_cache(bundle: NightFrameBundle, processed_dir: Path = PREPROCESSED_NIGHTS_DIR) -> Path:
     processed_dir.mkdir(parents=True, exist_ok=True)
     cache_path = night_cache_path(bundle.night_id, processed_dir)
-    joblib.dump(bundle, cache_path)
+    joblib.dump(bundle, cache_path, compress=JOBLIB_COMPRESSION_LEVEL)
     return cache_path
 
 
