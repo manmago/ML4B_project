@@ -18,3 +18,16 @@ Here you will find a short **tutorial** for our app. Please note that using the 
 
 Open our [Streamlit app](https://ml4b-sleep-classification.streamlit.app/).
 
+*Sleep-phases mode*: You will see a "demo" version of a final sleep phase classification app.   
+It provides you with basic sleep information such as sleep duration and duration of different sleep phases. Below you will find different diagrams displaying more information.  
+For now, this remains a "demo" version, since no "real-life" data is used to compile the labels. 
+
+*Binary mode*: If you toggle the radio button to the binary mode on the top left, you will see an early experimental version of the app. Since we focussed on binary classification in the beginning, it is a more experimental version which has some features for testing and exploring. 
+
+In the online/clodud Streamlit app, both versions use a GitHub-friendly, 3x compressed .joblib demo night. It was not used for training and serves as validation. However, please note that this reduces the quality of some of the apps features.
+It is also not possible to upload your own datasets.
+
+If you want to validate against your own sleep data, please run the app locally. This way you will experience the best results. 
+
+
+
