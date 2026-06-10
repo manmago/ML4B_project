@@ -138,7 +138,7 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 **Limitations**
 High expectations in the beginning and issues in the middle of the project permanently changed the efficiency of the artifact.  
 1. (Partially) missing "grounded" labeling data: This is the biggest limitation. Even the binary model is impaired due to this. Evaluation of the models' performance is challenging. 
-2. Raw nights are ~300MB's big: Sample size and demo size is small. 
+2. Raw nights are ~300MB's big: Sample size and demo size is small. The demo night from `app-demo-night` had to be converted into a compressed `DEMO.joblib` bundle, because the uncompressed version was too large for GitHub. We ended up uploading the 3x compressed version, which keeps it below the hard 100MB limit. Git LFS would be the alternative if the raw demo night should stay uncompressed.
 3. There is also no option to upload a night recorded to the Streamlit app: You would have to do this locally instead.  
 4. Inaccuracy on different mattresses or with partners: The sensor data was recorded on 2 beds and mattresses with no other person present. Results could vary a lot given other circumstances. 
 
