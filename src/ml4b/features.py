@@ -16,6 +16,11 @@ class WindowSpec:
     step_seconds: int = DEFAULT_STEP_SECONDS
 
 
+def feature_columns(frame: pd.DataFrame) -> list[str]:
+    exclude = {"night_id", "window_start", "window_end", "label", "sleep_fraction", "sample_count"}
+    return [column for column in frame.columns if column not in exclude and pd.api.types.is_numeric_dtype(frame[column])]
+
+
 def _signal_columns(frame: pd.DataFrame) -> list[str]:
     preferred = [
         "accelerometer_x",

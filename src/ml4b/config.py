@@ -8,6 +8,8 @@ RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 SLEEPDATA_DIR = DATA_DIR / "sleepdata"
 EXAMPLE_NIGHTS_DIR = DATA_DIR / "example_nights"
+ACCEL_PHASE_DIR = DATA_DIR / "Accelerometer_Night_1"
+SAMSUNG_SLEEP_PATH = DATA_DIR / "samsung_sleep.csv"
 MODELS_DIR = PROJECT_ROOT / "models"
 RESULTS_DIR = PROJECT_ROOT / "results"
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
@@ -18,6 +20,14 @@ DEFAULT_TIMEZONE = "Europe/Berlin"
 DEFAULT_WINDOW_SECONDS = 120
 DEFAULT_STEP_SECONDS = 60
 DEFAULT_MERGE_TOLERANCE_MS = 20
+
+
+def sleep_model_filename(window_seconds: int, step_seconds: int) -> str:
+    return f"sleep_model_w{window_seconds}_s{step_seconds}.joblib"
+
+
+def sleep_phase_model_filename(window_seconds: int, step_seconds: int) -> str:
+    return f"sleep_phase_model_w{window_seconds}_s{step_seconds}.joblib"
 
 SENSOR_FILE_MAP = {
     "Accelerometer.csv": "accelerometer",

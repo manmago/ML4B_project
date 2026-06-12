@@ -7,6 +7,8 @@ wheels/
 *.egg-info
 data/raw/**/*.csv
 data/raw/*.csv
+# Large raw accelerometer nights used to train the sleep-phase model (local only, ~280MB each)
+data/Accelerometer_Night_1/
 data/example_nights/**
 !data/example_nights/
 !data/example_nights/README.md
@@ -16,9 +18,11 @@ data/processed/*.csv
 data/processed/*.parquet
 data/processed/**/*.joblib
 data/sleepdata
-models/*.joblib
 !models/sleep_model_w120_s60.joblib
+!models/sleep_phase_model_w120_s60.joblib
+!models/sleep_model_samsung_w120_s60.joblib
 sleep_model.pkl
 
 # Virtual environments
 .venv
+uv.lock

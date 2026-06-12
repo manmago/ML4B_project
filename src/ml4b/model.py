@@ -8,10 +8,13 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectFromModel
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import GroupKFold, cross_validate
 from sklearn.pipeline import Pipeline
+
+from .features import feature_columns as _feature_columns
 
 
 @dataclass
@@ -22,12 +25,13 @@ class SleepModelBundle:
     metadata: dict[str, Any]
 
 
-def _feature_columns(frame: pd.DataFrame) -> list[str]:
-    exclude = {"night_id", "window_start", "window_end", "label", "sleep_fraction", "sample_count"}
-    return [column for column in frame.columns if column not in exclude and pd.api.types.is_numeric_dtype(frame[column])]
-
-
 def create_model_pipeline(random_state: int = 42) -> Pipeline:
+    selector_estimator = RandomForestClassifier(
+        n_estimators=200,
+        class_weight="balanced_subsample",
+        random_state=random_state,
+        n_jobs=-1,
+    )
     classifier = RandomForestClassifier(
         n_estimators=300,
         class_weight="balanced_subsample",
@@ -38,6 +42,7 @@ def create_model_pipeline(random_state: int = 42) -> Pipeline:
     )
     return Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
+        ("selector", SelectFromModel(selector_estimator, threshold="median")),
         ("classifier", classifier),
     ])
 
@@ -96,10 +101,15 @@ def train_sleep_model(feature_frame: pd.DataFrame, group_column: str = "night_id
     except ValueError:
         metrics["train_roc_auc"] = float("nan")
 
+    selector = model.named_steps["selector"]
+    selected_mask = selector.get_support()
+
     metadata = {
         "n_samples": int(len(usable)),
         "n_groups": int(len(unique_groups)),
         "feature_count": int(len(feature_columns)),
+        "n_selected_features": int(selected_mask.sum()),
+        "selected_feature_names": [column for column, keep in zip(feature_columns, selected_mask) if keep],
     }
     return SleepModelBundle(model=model, feature_columns=feature_columns, metrics=metrics, metadata=metadata)
 

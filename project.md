@@ -20,16 +20,14 @@ We aim to address this gap by training a ML model to classify sleep states.
 
 3. Can smartphone sensor data, in combination with derived sleep quality metrics, classify sleep phases (light sleep, deep sleep, potentially REM) with meaningful accuracy, and what are the physiological limitations of such classification without direct biometric signals?
 
-- How is this document structured
+This document follows the standard CRISP-DM-style structure of an ML project report: motivation and research questions, related work, methodology (data understanding, preparation, modeling, and evaluation), results, discussion (including limitations and ethics), conclusion, and sources.
 
 # 2 Related Work
 
-- What have others done in your area of work/ to answer similar questions?
-
 *Golden standard* of sleep tracking: **Polysomnography (PSG)**. Monitors brain activity, eye and muscle movements, heart rate, oxygen saturation, airflow, and respiratory effort (Rundo & Downey, 2019).  
-Researchers trained a deep neural network for sleep classification (Morokuma/Sata)
+Researchers trained a deep neural network for sleep classification using cardiorespiratory and body movement signals (Morokuma et al., 2023), and a related study used multi-modality signals for sleep staging (Satapathy et al., 2024).
 
-*Wearables* rely on a combination of body movement, electrocardiogram data, blood volume changes, oxygen saturation, microphone data to predict sleep, and sleep phases (Source tbd).
+*Wearables* rely on a combination of body movement, electrocardiogram data, blood volume changes, oxygen saturation, and microphone data to predict sleep and sleep phases (Manz et al., 2025).
 
 *Mobile* applications are more limited in clinical sensor data, therefore lean on audio data or movement measured with accelerometer and gyroscope. Additionally, almost all apps on the market lack empirical evidence, for instance validation against the golden standard, PSG. Apps with such validation studies present weak correlation. One example is the Sleep Cycle application, which claims to use AI-powered analysis technologies (Amanth, 2021; Sleep Cycle, n.d.).
 
@@ -65,7 +63,7 @@ For modeling, the best fit based on related work seemed to be a Random Forest. W
 
 Primarily smartphone sensor data from gyroscope and accelerometer. For labeling, a hybrid approach with smartwatch-based sleeptracking data and manual annotations was used. Sampling rate set to 100Hz.
 
-Total recorded: x nights, y duration
+Total recorded: 5 nights (`n_groups=5` in the cached feature dataset). After windowing (120s windows, 60s steps), this yields 2245 labeled feature windows in total. At a 60s step size, 2245 windows correspond to roughly 37 hours of combined recording, i.e. an average of about 7.5 hours per night - in line with the recording protocol described above (full night plus ~40 minutes of buffer at each end).
 
 Each night equals a .csv file including files: 
 - Accelerometer.csv - Calibrated acceleration (x, y, z axes)
@@ -97,7 +95,12 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 2. Preprocessing
 - Sensors merged per night with nearest timestamp sensitive method due to few mismatches.
 3. Feature selection
+- Each 120s window with a 60s step is described by 8 summary statistics (mean, std, min, max, median, IQR, energy, range) computed over 8 signal channels (accelerometer x/y/z/magnitude and gyroscope x/y/z/magnitude), giving 64 numeric features per window.
+- The training pipeline (`ml4b.model.create_model_pipeline`) adds a `SelectFromModel` step: a separate `RandomForestClassifier` ranks all 64 features by importance, and only those at or above the median importance are kept (typically around 32 of 64) before they reach the final classifier. This reduces redundancy between highly-correlated statistics (e.g. energy vs. std of the same channel) and keeps the model focused on the most informative signals.
+- The selected feature names and their count are recorded in `model_bundle.metadata["selected_feature_names"]` / `metadata["n_selected_features"]` for inspection after training.
 4. Data splitting
+- Models are evaluated with `GroupKFold` cross-validation grouped by `night_id`, using up to 5 folds (one per recorded night). This is effectively a leave-one-night-out evaluation: in each fold, the model is trained on 4 nights and validated on the remaining, unseen night, which gives a realistic estimate of how the model generalizes to a new night/person.
+- After cross-validation, a final model is fit on all available windows from all 5 nights for use in the app.
 5. Potential bias discussion
 - Time of the day: The training inputs are motion sensors only and window_start, window_end, label, sleep_fraction, and sample_count are explicitly excluded from the features. However, due to a mostly regular sleep schedule, a slight bias in sleep recognition is possible.  
  
@@ -121,15 +124,70 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 
 # 4 Results
 
-- Describe what artifacts you have build
+**Artifacts**
 
-- Describe the libraries and tools you use
+- `src/ml4b`: a reusable Python package implementing the full pipeline - `io` (loading raw Sensor Logger CSVs / `.joblib` night bundles), `preprocess` (merging accelerometer and gyroscope streams, computing magnitudes), `labels` (resolving smartwatch and manual annotation labels into AWAKE/SLEEP intervals), `features` (window-based feature extraction, 64 features per window), `model` (training, feature selection, evaluation, persistence), and `pipeline` (running the full pipeline on a new night to produce a per-window hypnogram).
+- `models/sleep_model_w120_s60.joblib`: the original binary AWAKE/SLEEP Random Forest model bundle (accelerometer + gyroscope, 64 features), including its feature columns, cross-validated metrics, and metadata.
+- `models/sleep_phase_model_w120_s60.joblib`: a 4-class (Awake/Light/Deep/REM) Random Forest trained on **real Samsung Health sleep-stage labels** over five accelerometer-only nights. Built by the `ml4b.samsung` (label parsing) and `ml4b.phases` (multiclass model) modules and the `train-phases` CLI command.
+- `data/example_nights/DEMO.joblib`: a compressed example night (full 100Hz accelerometer + gyroscope data plus labels) bundled with the repository so the app works out of the box without any local raw data.
+- `data/samsung_sleep.csv`: a Samsung Health `sleep_stage` export providing ground-truth 4-stage labels (Awake/Light/Deep/REM) for the recorded nights, used to train and evaluate the phase model.
+- `app/app.py`: a Streamlit app with three modes (described below).
+- A `main.py` CLI entry point for training the models (`uv run python -m main train ...` for the binary model, `train-phases` for the 4-class phase model, `train-binary-samsung` for a Samsung-labelled wake/sleep model).
 
-- Describe the concept of your app
+**Libraries and tools**
 
-- Describe the results you achieve by applying your trained models on unseen data
+- `pandas` / `numpy` for data loading, merging, and feature computation.
+- `scikit-learn` for the modeling pipeline (`Pipeline`, `SimpleImputer`, `SelectFromModel`, `RandomForestClassifier`, `GroupKFold`, `cross_validate`, evaluation metrics).
+- `joblib` for serializing the trained model bundle and the compressed example night.
+- `streamlit` for the interactive web app, with `plotly` for the magnitude and hypnogram charts.
+- `uv` for dependency and environment management.
 
-- Descriptive Language (no judgement, no discussion in this section -> just show what you built)
+**App concept**
+
+The Streamlit app has three modes, selectable from the sidebar:
+
+- *"Early version: Binary classification"* (the centerpiece of the project): loads the trained `sleep_model_w120_s60.joblib` model and runs it on the bundled `DEMO` example night, showing sensor magnitude plots, a 10-minute hypnogram of predicted sleep probability vs. the reference label (where available), and a table of the raw per-window predictions. It also lets users **upload their own night** as a `.zip` containing `Accelerometer.csv` and `Gyroscope.csv` (the same format produced by the Sensor Logger app); the upload is unpacked into a temporary directory, run through the same merging/feature-extraction/prediction pipeline, and rendered with the same charts - all in-memory, for inference only, with no retraining and no persistence.
+- *"Sleep phases"*: an exploratory mode that reuses the same window pipeline, but trains a 4-stage (deep/light/REM/awake) Random Forest at runtime on heuristic, activity-percentile-based pseudo-labels. It shows a hypnogram, sleep-phase distribution, and feature-importance chart, with a clear disclosure that its labels are heuristic rather than ground-truth.
+- *"Sleep phases (trained)"*: loads the saved `sleep_phase_model_w120_s60.joblib` model, which **was** trained on real Samsung Health stage labels, and predicts stages for the selected night, overlaying the prediction against the Samsung ground truth where available. Crucially, this mode reports the model's honest leave-one-night-out validation metrics and confusion matrix - which show that accelerometer-only data is not sufficient for reliable 4-class staging (see below).
+
+**Results on unseen data**
+
+*Original binary model (accelerometer + gyroscope, coarse in-bed labels).* The first binary AWAKE/SLEEP model was evaluated with leave-one-night-out (`GroupKFold`, 5 folds) cross-validation across the 5 recorded nights (2245 windows total, 64 engineered features). The averaged out-of-fold metrics were:
+
+| Metric | Value |
+| --- | --- |
+| Accuracy | 0.985 |
+| Balanced accuracy | 0.953 |
+| F1 | 0.992 |
+| Precision | 0.992 |
+| Recall | 0.991 |
+| ROC-AUC | 0.995 |
+
+These numbers look excellent, but they must be read with care: the labels for this model came from manual/smartwatch **in-bed intervals**, i.e. the whole bed-to-wake span is stamped SLEEP and everything outside it AWAKE. That is essentially an *in-bed vs. out-of-bed* task, which accelerometer data separates easily (the user is clearly moving around before and after), so the high scores overstate true sleep-staging ability. The harder, more honest evaluation below uses per-window Samsung Health labels that mark the brief awakenings scattered *throughout* the night.
+
+*4-class phase model (accelerometer only, real Samsung Health stage labels).* Using the five new accelerometer nights labelled with genuine Samsung Health hypnogram stages (1747 labelled windows: 1206 Light, 213 REM, 180 Deep, 148 Awake; 32 accelerometer features, no gyroscope), a 4-class Random Forest was trained and evaluated with the same leave-one-night-out protocol. The result is a clear **negative finding**:
+
+| Metric | Value |
+| --- | --- |
+| Balanced accuracy | 0.24 (4-class chance ≈ 0.25) |
+| Macro F1 | 0.21 |
+| Light recall | 0.95 |
+| Deep / REM / Awake recall | ≈ 0 |
+
+The model collapses to predicting the majority "Light" class and cannot recover Deep, REM, or Awake on held-out nights. This is not a software bug (labels and features were verified) but a **physiological limitation**: phone-accelerometer motion alone does not carry enough signal to separate sleep stages that differ mainly in brain/cardiac activity rather than gross movement. This directly answers research question 3 in the negative.
+
+*Binary wake/sleep on the same real labels (accelerometer only).* Collapsing the Samsung stages to AWAKE (Awake) vs. SLEEP (Light/Deep/REM) and retraining the binary model (1747 windows, 1599 SLEEP / 148 AWAKE) gives:
+
+| Metric | Value |
+| --- | --- |
+| Accuracy | 0.93 |
+| Balanced accuracy | 0.60 |
+| F1 (SLEEP) | 0.96 |
+| Precision | 0.93 |
+| Recall | 1.00 |
+| ROC-AUC | 0.57 |
+
+Here the headline accuracy (0.93) is again an imbalance artifact - 91.5% of windows are SLEEP, and the model achieves it by predicting SLEEP almost unconditionally (recall ≈ 1.0). The honest discriminative metrics, balanced accuracy 0.60 and ROC-AUC 0.57, are only marginally above chance: detecting the short wake epochs *inside* a night from phone motion is hard, because lying awake but still looks like sleep to an accelerometer. This is a much more realistic picture of the task than the 0.985 from the in-bed-labelled model, and reframes that earlier result accordingly.
 
 # 5 Discussion
 
@@ -137,28 +195,35 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 
 **Limitations**
 High expectations in the beginning and issues in the middle of the project permanently changed the efficiency of the artifact.  
-1. (Partially) missing "grounded" labeling data: This is the biggest limitation. Even the binary model is impaired due to this. Evaluation of the models' performance is challenging. 
+1. ~~(Partially) missing "grounded" labeling data: This is the biggest limitation.~~ **Partially resolved:** A Samsung Health `sleep_stage` export (`data/samsung_sleep.csv`) now provides real per-window 4-stage ground truth for five accelerometer nights, which let us train and *honestly evaluate* both a 4-class phase model and a wake/sleep model (see Results). The grounded labels did not make the models good - instead they revealed a hard ceiling (next point) - but evaluation is no longer the blind spot it was.
 2. Raw nights are ~300MB's big: Sample size and demo size is small. The raw demo night added had to be converted into a compressed `DEMO.joblib` bundle, because the uncompressed version was too large for GitHub. We ended up uploading the 3x compressed version, which keeps it below the hard 100MB limit. Git LFS as an alternative did not work, there were complications with the Streamlit app.
-3. There is also no option to upload a night recorded to the Streamlit app: You would have to do this locally instead. 
-4. Combined, only one night to demonstrate the app and models is available. This night also does not have health app sleep labels, which makes the project hard to evaluate. 
-5. There seems to be a bug regarding the amount of time slept and in the different sleep phases. This is likely to the 3x compression of the uploaded DEMO.joblib file, whereas the original folder with .csv recordings show more realistic time. Therefore, the live/cloud Streamlit App performs worse than the local one.
-5. Inaccuracy on different mattresses or with partners: The sensor data was recorded on 2 beds and mattresses with no other person present. Results could vary a lot given other circumstances. 
+3. ~~There is also no option to upload a night recorded to the Streamlit app: You would have to do this locally instead.~~ **Resolved:** The "Early version: Binary classification" mode now includes an "Analyze your own night" upload feature accepting a `.zip` with `Accelerometer.csv` and `Gyroscope.csv`. Note that Streamlit Community Cloud caps uploads at 200MB, so very long nights (~300MB) may still need to be analyzed locally.
+4. ~~Combined, only one night to demonstrate the app and models is available. This night also does not have health app sleep labels.~~ **Partially resolved:** Five additional nights with matching Samsung Health stage labels are now available for training/evaluation (kept local, ~280MB each, gitignored). They are accelerometer-only, however - the phone was not logging the gyroscope - so the phase model uses 32 features instead of 64 and cannot reuse the gyroscope-dependent binary model.
+7. **Physiological ceiling of accelerometer-only staging (key finding):** With real Samsung labels, the 4-class model performs at roughly chance (balanced accuracy ≈ 0.24) and the wake/sleep model only marginally above it (balanced accuracy ≈ 0.60, ROC-AUC ≈ 0.57). Phone motion alone cannot reliably distinguish sleep stages or catch brief in-night awakenings without complementary biometric signals (heart rate, HRV, respiration). This is the central honest result of the project and bounds what any similar accelerometer-only app can achieve.
+5. ~~There seems to be a bug regarding the amount of time slept and in the different sleep phases.~~ **Resolved:** The Streamlit "Sleep phases" mode displayed sleep durations that were far too short. The cause was a unit mismatch in `app/app.py`: each window advances by a 60-second step (`STEP_SECONDS = DEFAULT_STEP_SECONDS = 60`), but the duration metrics converted window counts into time using a different, hard-coded epoch length, so the totals did not match the real recording. This was unrelated to the joblib compression - the demo bundle is still full 100Hz sensor data. Fixed by deriving all durations directly from the step size (`compute_metrics` now computes minutes as `n_windows * STEP_SECONDS / 60`), so the displayed totals match the recorded night (e.g. the ~8h demo night reports ~477 windows ≈ 7h57min).
+6. Inaccuracy on different mattresses or with partners: The sensor data was recorded on 2 beds and mattresses with no other person present. Results could vary a lot given other circumstances. 
 
 **Ethics, effects on society and environment**
-There are no known concerns regarding ethics. At best, the app could provide beneficial health data for better living. Since there is no option to upload sleep data, privacy risk is non-existent. 
-TODO
+At best, the app could provide beneficial health data for better living and lower the barrier to sleep tracking for people who do not own a smartwatch. The app now supports uploading a recorded night (a `.zip` with `Accelerometer.csv` and `Gyroscope.csv`) for analysis. This data is processed entirely in-memory for the duration of the session: it is extracted to a temporary directory, run through the prediction pipeline, and then discarded. Nothing is persisted to disk beyond the temporary extraction, sent to any external service, or used to retrain the model. No accounts, identifiers, or location data are collected, so the privacy risk of using the app is low - though users should still be mindful that motion sensor data, while not biometric in the medical sense, can in principle reveal information about a person's daily routine if it were ever stored or shared.
 
 **Danger**
-Discrimination could happen in people who are limited in movement or have a lower body weight/mattress hardness ratio. They could experience worse results.  
+Discrimination could happen in people who are limited in movement or have a lower body weight/mattress hardness ratio. They could experience worse results, since the training data only covers two beds/mattresses and no participants with movement impairments. Generalization to wheelchair users, people sharing a bed with a partner or pet, or very different mattress types is untested and likely worse.
 
-- Transparency 
-- Possible sources https://algorithmwatch.org/en/ Have a look at the "Automating Society Report"; https://ainowinstitute.org/ Have a look at this website and their publications
+**Transparency**
+The app explicitly distinguishes between its three modes: the binary model (with reported cross-validation metrics), the exploratory "Sleep phases" mode (clearly labeled as heuristic, non-validated pseudo-labels), and the "Sleep phases (trained)" mode, which shows a real-label model alongside its honest, weak validation metrics and confusion matrix rather than only a polished hypnogram. We deliberately surface the negative result instead of hiding it behind a plausible-looking chart. Users are told what data is required, how it is processed, and that uploaded data is not stored.
 
-- Further Research: What could be next steps for other researchers (specific research questions)
+For broader context on the societal effects of automated decision-making and health-tracking technology, see the AlgorithmWatch "Automating Society" reports (https://algorithmwatch.org/en/) and the publications of the AI Now Institute (https://ainowinstitute.org/).
+
+**Further Research**
+- Frequency-domain features (e.g. FFT-based spectral power per band) in addition to the current time-domain statistics, which could better separate sleep phases that differ mainly in movement frequency rather than amplitude.
+- Systematic hyperparameter tuning (e.g. grid/random search over `n_estimators`, `max_depth`, `min_samples_leaf`, and the `SelectFromModel` threshold) instead of the currently fixed Random Forest configuration.
+- Fusing the accelerometer with biometric signals (heart rate, HRV, respiration, SpO2) - the Samsung-labelled experiments show this is the missing ingredient: motion alone hit a hard ceiling for both 4-class staging and in-night wake detection, so richer phase classification almost certainly requires sensors beyond the phone.
+- Re-recording nights with the gyroscope enabled (the new labelled nights are accelerometer-only), so the full 64-feature pipeline and the existing binary model can be applied to ground-truth-labelled data.
+- Collecting a larger, multi-participant dataset across different mattresses, bed-sharing situations, and movement profiles to assess and improve generalization, and to make the bias and fairness discussion above empirically testable.
 
 # 6 Conclusion
 
-Based on movement during sleep, the app can estimate your sleep and wake stages. It can also predict the different sleep phases light, deep and REM. The binary mode shows an early experimental approach, while the multi-phase mode depicts a user-friendly UI and better  
+Based on movement during sleep, the app can estimate your sleep and wake stages with a validated, cross-validated Random Forest model, and can also explore the different sleep phases (light, deep and REM) using the same engineered features with heuristic labels. The binary mode is the validated centerpiece with reported metrics and an upload feature for analyzing your own night, while the multi-phase mode is an exploratory, clearly-labeled preview of what richer phase classification could look like once real per-phase labels become available.
 Facing hardships, this project was an experimental first try at creating an ML-based app. The results did not meet the expectations, yet many things about project and processes were learned. We learned how to build a simple app in Streamlit and what it takes to train a model. 
 The resulting models and app are limited in their intention and should not be perceived as final or functional, yet they serve their purpose as a first version or a demonstration of what a similar artifact should provide. 
 The artifact we built can be used as a baseline or inspiration for similar projects. 
@@ -168,7 +233,7 @@ The artifact we built can be used as a baseline or inspiration for similar proje
 Ananth S. (2021). Sleep apps: current limitations and challenges. Sleep science (Sao Paulo, Brazil), 1
 (1), 83–86. https://doi.org/10.5935/1984-0063.20200036
 
-Feng, S., Mäntymäki, M., & Pappas, I. O. (2026). Sleep tracking: An integrative review, conceptual framework and future research agendas. Behaviour & Information Technology, 0(0), 1–31. https://doi.org/10.10800144929X.2026.2621789
+Feng, S., Mäntymäki, M., & Pappas, I. O. (2026). Sleep tracking: An integrative review, conceptual framework and future research agendas. Behaviour & Information Technology, 0(0), 1–31. https://doi.org/10.1080/0144929X.2026.2621789
 
 
 Manz, K., Krug, S., Kühnelt, C., Lemcke, J., Öztürk, I., & Loss, J. (2025). Consumer Wearable Usage to Collect Health Data Among Adults Living in Germany: Nationwide Observational Survey Study. JMIR mHealth and uHealth, 13, e59199. https://doi.org/10.2196/59199
