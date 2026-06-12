@@ -6,7 +6,7 @@ The committed demo format is a compact `.joblib` bundle at the top level of this
 
 Reference labels for the demo night live in `manual-labels.csv` at the top level of this folder. The app loads them the same way it loads `data/raw/manual-labels.csv`, so the demo night can show predicted-vs-real label comparisons.
 
-Raw sensor folders such as `DEMO/` are useful when regenerating the bundle locally, but they should not be committed to GitHub.
+Raw sensor folders are useful when regenerating a bundle locally, but they should not be committed to GitHub. The raw source for `DEMO.joblib` lives here locally as `app-demo-night/` (it shares the `manual-labels.csv` reference labels) and is kept out of git.
 
 Supported formats:
 
