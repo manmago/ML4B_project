@@ -45,17 +45,19 @@ The project did not undergo a linear process, there was a lot of jumping back an
 **Recording**  
 We used the Sensor Logger mobile application to record sensor data. Since sleep phases correlate with movement, we decided to use the accelerometer and gyroscope sensors to record our movement during sleep.   
 The recordings were started 30mins before deciding to put away the phone and go to sleep and lasted the entire night until we would wake up and turn off the recording approx. 10mins later. This was due to our first phase, the binary sleep-wake detection, so that the first models had enough sensor data of wake stages.  
-In total, contributor manmago recorded 5-10 nights. 
+The recordings were contributed by two team members: [@manmago](https://github.com/manmago) recorded the 5 Huawei-labeled accelerometer + gyroscope nights used for the binary model, and [@Sieberuni](https://github.com/Sieberuni) recorded the 5 Samsung-labeled accelerometer-only nights used for the phase and Samsung-binary models. 
 
 **Exploration**
 Due to time pressure, exploration in notebooks/* is limited to mostly data preparation.
 
 **Labeling**  
-Labeling for the binary model went different than planned. Contributor manmago used a Huawei SmartWatch and the associated Health App to track sleeping stages to use for labeling. Unfortunately, when requesting the data, only a small selection of the nights needed were provided. The rest of the recorded nights with sleep classification from the app were never delivered, even after multiple requests.  
-Therefore, a fallback mechanism was used and merged with the labels from the health app provider. It's less rigorous, however the times of "going to sleep" and "waking up" were manually added in the Annotations.csv and later transferred to a uniform format. This will further be discussed in the limitations chapter. 
+Labeling for the binary model went different than planned. Contributor [@manmago](https://github.com/manmago) used a Huawei SmartWatch and the associated Health App to track sleeping stages to use for labeling. Unfortunately, when requesting the data, only a small selection of the nights needed were provided. The rest of the recorded nights with sleep classification from the app were never delivered, even after multiple requests.  
+Therefore, a fallback mechanism was used and merged with the labels from the health app provider. It's less rigorous, however the times of "going to sleep" and "waking up" were manually added in the Annotations.csv and later transferred to a uniform format. This will further be discussed in the limitations chapter.  
+For the later sleep-phase track, contributor [@Sieberuni](https://github.com/Sieberuni) provided a separate set of nights labeled with a **Samsung Health `sleep_stage` export**. This gives genuine per-stage ground truth (Awake/Light/Deep/REM) rather than just bed/wake intervals: the `ml4b.samsung` module parses the export into stage intervals and assigns each feature window the stage it overlaps most in time (maximum-overlap labeling). These real per-window labels are what made the *honest* phase and wake/sleep evaluation in the Results possible. 
 
 **Modeling**
-For modeling, the best fit based on related work seemed to be a Random Forest. We trained one model with the nights recorded from manmago and the corresponding labeling. The resulting model/sleep_model_w120_s60.joblib was shown, evaluated and tweaked with in the streamlit app which is the binary mode you can see in the current app.
+For modeling, the best fit based on related work seemed to be a Random Forest. We first trained the binary model with the Huawei-labeled nights recorded by [@manmago](https://github.com/manmago) and the corresponding labeling. The resulting `models/sleep_model_w120_s60.joblib` was shown, evaluated and tweaked with in the streamlit app which is the binary mode you can see in the current app.  
+Once @Sieberuni's Samsung-labeled nights became available, two further Random Forests were trained on them: `models/sleep_phase_model_w120_s60.joblib`, a 4-class (Awake/Light/Deep/REM) phase model, and `models/sleep_model_samsung_w120_s60.joblib`, a binary wake/sleep model on the same nights with the stages collapsed to AWAKE vs. SLEEP. Both use the accelerometer-only feature set (32 features, no gyroscope). Separately, the app's exploratory "Sleep phases" mode trains a fourth Random Forest at runtime on **heuristic** activity-percentile pseudo-labels (not ground truth) purely to illustrate a 4-stage hypnogram. In total: three trained, saved models plus one runtime heuristic model.
 
 ## 3.2 Data Understanding and Preparation
 
@@ -63,7 +65,10 @@ For modeling, the best fit based on related work seemed to be a Random Forest. W
 
 Primarily smartphone sensor data from gyroscope and accelerometer. For labeling, a hybrid approach with smartwatch-based sleeptracking data and manual annotations was used. Sampling rate set to 100Hz.
 
-Total recorded: 5 nights (`n_groups=5` in the cached feature dataset). After windowing (120s windows, 60s steps), this yields 2245 labeled feature windows in total. At a 60s step size, 2245 windows correspond to roughly 37 hours of combined recording, i.e. an average of about 7.5 hours per night - in line with the recording protocol described above (full night plus ~40 minutes of buffer at each end).
+The project uses two separate datasets, one per track:
+
+- **Binary track (Huawei, accelerometer + gyroscope):** 5 nights (`n_groups=5` in the cached feature dataset). After windowing (120s windows, 60s steps), this yields 2245 labeled feature windows, each described by 64 features. At a 60s step size, 2245 windows correspond to roughly 37 hours of combined recording, i.e. an average of about 7.5 hours per night - in line with the recording protocol described above (full night plus ~40 minutes of buffer at each end).
+- **Phase track (Samsung, accelerometer only):** 5 further nights labeled with Samsung Health stages, yielding 1747 labeled windows. These nights were recorded without the gyroscope, so each window has 32 accelerometer-only features instead of 64. This dataset feeds the 4-class phase model and the Samsung wake/sleep model.
 
 Each night equals a .csv file including files: 
 - Accelerometer.csv - Calibrated acceleration (x, y, z axes)
@@ -79,7 +84,7 @@ Timestamps: Unix format (nanoseconds)
 Values: SI units (m/s² for acceleration, rad/s for angular velocity)
 
 **Specialities**  
-Hybrid labeling with smartwatch sleep intervals as the primary source. Manual annotations are used as a fallback when smartwatch tracking is unavailable.
+Two labeling strategies are used across the two tracks. For the binary track, hybrid labeling with Huawei smartwatch sleep intervals as the primary source, and manual annotations as a fallback when smartwatch tracking is unavailable. For the phase track, real per-window stage labels from a Samsung Health `sleep_stage` export (Awake/Light/Deep/REM), assigned to windows by maximum time overlap.
 
 ### Dataset preparation
 
@@ -95,8 +100,8 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 2. Preprocessing
 - Sensors merged per night with nearest timestamp sensitive method due to few mismatches.
 3. Feature selection
-- Each 120s window with a 60s step is described by 8 summary statistics (mean, std, min, max, median, IQR, energy, range) computed over 8 signal channels (accelerometer x/y/z/magnitude and gyroscope x/y/z/magnitude), giving 64 numeric features per window.
-- The training pipeline (`ml4b.model.create_model_pipeline`) adds a `SelectFromModel` step: a separate `RandomForestClassifier` ranks all 64 features by importance, and only those at or above the median importance are kept (typically around 32 of 64) before they reach the final classifier. This reduces redundancy between highly-correlated statistics (e.g. energy vs. std of the same channel) and keeps the model focused on the most informative signals.
+- Each 120s window with a 60s step is described by 8 summary statistics (mean, std, min, max, median, IQR, energy, range) computed over the available signal channels. For the binary (Huawei) track these are 8 channels (accelerometer x/y/z/magnitude and gyroscope x/y/z/magnitude), giving 64 numeric features per window. The Samsung phase track is accelerometer-only (no gyroscope was logged), so it has 4 channels and 32 features per window.
+- The training pipeline (`ml4b.model.create_model_pipeline`) adds a `SelectFromModel` step: a separate `RandomForestClassifier` ranks all features by importance, and only those at or above the median importance are kept (around half) before they reach the final classifier. This reduces redundancy between highly-correlated statistics (e.g. energy vs. std of the same channel) and keeps the model focused on the most informative signals.
 - The selected feature names and their count are recorded in `model_bundle.metadata["selected_feature_names"]` / `metadata["n_selected_features"]` for inspection after training.
 4. Data splitting
 - Models are evaluated with `GroupKFold` cross-validation grouped by `night_id`, using up to 5 folds (one per recorded night). This is effectively a leave-one-night-out evaluation: in each fold, the model is trained on 4 nights and validated on the remaining, unseen night, which gives a realistic estimate of how the model generalizes to a new night/person.
@@ -108,11 +113,16 @@ Exploration notebook findings showed mostly synchronized and stable sensor data.
 ## 3.3 Modeling and Evaluation
 
 **Selected model architecture:**
-- Random Forest as the main supervised baseline
+- Random Forest throughout, in four concrete forms:
+  1. Binary AWAKE/SLEEP on Huawei accel+gyro nights (`sleep_model_w120_s60`) — the validated centerpiece.
+  2. 4-class Awake/Light/Deep/REM on Samsung accel-only nights (`sleep_phase_model_w120_s60`).
+  3. Binary AWAKE/SLEEP on the same Samsung accel-only nights (`sleep_model_samsung_w120_s60`).
+  4. An exploratory 4-class model trained at runtime in the app on heuristic activity-percentile pseudo-labels (not validated, illustrative only).
 
 **Training approach:**
-- Train the supervised models on window-based features derived from the merged night sensor data
+- Train the supervised models (1-3 above) on window-based features derived from the merged night sensor data
 - Use the same preprocessing and feature extraction pipeline for training and prediction
+- The heuristic mode (4) reuses the same feature pipeline but generates its own labels at runtime, so it has no ground-truth evaluation by design
 
 **Evaluation metrics:**
 - Accuracy: simple overall baseline
@@ -202,8 +212,7 @@ High initial expectations met real-world data and process constraints partway th
 3. **Uploading your own night.** The Streamlit app now supports analyzing a recording directly: the "Early version: Binary classification" mode includes an "Analyze your own night" upload feature accepting a `.zip` with `Accelerometer.csv` and `Gyroscope.csv` (the trained phase mode accepts accelerometer-only uploads). Streamlit Community Cloud caps uploads at 200MB, so very long nights (~300MB) may still need to be analyzed locally.
 4. **Dataset breadth.** The dataset remains modest but has grown. Five additional nights with matching Samsung Health stage labels are now available for training/evaluation (kept local, ~280MB each, gitignored). They are accelerometer-only - the phone was not logging the gyroscope - so the phase model uses 32 features instead of 64 and cannot reuse the gyroscope-dependent binary model.
 5. **Physiological ceiling of accelerometer-only staging (key finding).** With real Samsung labels, the 4-class model performs at roughly chance (balanced accuracy ≈ 0.24) and the wake/sleep model only marginally above it (balanced accuracy ≈ 0.60, ROC-AUC ≈ 0.57). Phone motion alone cannot reliably distinguish sleep stages or catch brief in-night awakenings without complementary biometric signals (heart rate, HRV, respiration). This is the central honest result of the project and bounds what any similar accelerometer-only app can achieve.
-6. **Duration-reporting bug (fixed).** The "Sleep phases" mode previously displayed sleep durations that were far too short, due to a unit mismatch in `app/app.py`: each window advances by a 60-second step (`STEP_SECONDS = DEFAULT_STEP_SECONDS = 60`), but the duration metrics converted window counts into time using a different, hard-coded epoch length, so the totals did not match the real recording. This was unrelated to the joblib compression - the demo bundle is still full 100Hz sensor data. It is fixed by deriving all durations directly from the step size (`compute_metrics` now computes minutes as `n_windows * STEP_SECONDS / 60`), so the displayed totals match the recorded night (e.g. the ~8h demo night reports ~477 windows ≈ 7h57min).
-7. **Bed and sleeper variation.** The sensor data was recorded on two beds/mattresses with no other person present, so accuracy on different mattresses or with a bed partner is untested and results could vary considerably under other circumstances.
+6. **Bed and sleeper variation.** The sensor data was recorded on two beds/mattresses with no other person present, so accuracy on different mattresses or with a bed partner is untested and results could vary considerably under other circumstances.
 
 **Ethics, effects on society and environment**
 At best, the app could provide beneficial health data for better living and lower the barrier to sleep tracking for people who do not own a smartwatch. The app now supports uploading a recorded night (a `.zip` with `Accelerometer.csv` and `Gyroscope.csv`) for analysis. This data is processed entirely in-memory for the duration of the session: it is extracted to a temporary directory, run through the prediction pipeline, and then discarded. Nothing is persisted to disk beyond the temporary extraction, sent to any external service, or used to retrain the model. No accounts, identifiers, or location data are collected, so the privacy risk of using the app is low - though users should still be mindful that motion sensor data, while not biometric in the medical sense, can in principle reveal information about a person's daily routine if it were ever stored or shared.
