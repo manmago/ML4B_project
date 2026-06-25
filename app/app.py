@@ -811,13 +811,25 @@ def run_sleep_phase_mode() -> None:
         st.divider()
         st.subheader("All recordings compared")
         rows = []
+        skipped = []
         for name, path in nights.items():
             df_n_features = load_night_features(path, SLEEPDATA_DIR, manual_labels_path)
             if df_n_features.empty:
                 continue
+            # The model is trained on the selected recording's feature set. Recordings that don't
+            # expose every selected feature column (e.g. an accelerometer-only night when the selected
+            # night also has gyroscope) can't be predicted - skip them instead of raising a KeyError.
+            if not set(feature_cols).issubset(df_n_features.columns):
+                skipped.append(name)
+                continue
             df_n = predict_stages(df_n_features, scaler, clf, feature_cols)
             rows.append({"Recording": name, **compute_metrics(df_n)})
         st.dataframe(pd.DataFrame(rows).set_index("Recording"), width='stretch')
+        if skipped:
+            st.caption(
+                "Not comparable to the selected recording (missing sensor columns, e.g. gyroscope): "
+                + ", ".join(skipped)
+            )
 
 
 # =============================================================================
