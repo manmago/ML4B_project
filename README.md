@@ -49,6 +49,9 @@ ML4B_project/
 └── README.md               # You are here
 ```
 
+Note: /presentation includes a screencast and .pptx presenting our project. This is a mandatory
+requirement for the final presentations in the module ML4B and can be ignored. 
+
 ## Using the app (online)
 
 Open our [Streamlit app](https://ml4b-sleep-classification.streamlit.app/) and pick a view
