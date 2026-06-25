@@ -52,21 +52,26 @@ ML4B_project/
 ## Using the app (online)
 
 Open our [Streamlit app](https://ml4b-sleep-classification.streamlit.app/) and pick a view
-with the **Model mode** selector in the sidebar. There are **four**:
+with the **Model mode** selector in the sidebar. There are **four** modes.
+We recommend starting with the binary mode, as it delivers the most reliable results:
 
-- **Sleep phases** — A polished 4-stage dashboard (Deep / Light / REM / Awake). It is a
-  *demo*: the model is trained on heuristic, movement-based pseudo-labels generated at
-  runtime, so it has **never been checked against real sleep data**. Treat it as
-  illustrative, not as truth.
+- **Early version: Binary classification** — Classifies sleep vs. wake based on movement. 
+  Original model that we started with to gain a better understanding. This model works 
+  reasonably well on coarse in-bed labels and already provides practical value. 
+  You can upload your own night here.
 - **Sleep phases (trained)** — The **honest** 4-stage version, trained on **real Samsung
-  Health sleep stages**. Its headline result: using phone motion alone, 4-stage
-  classification scores about **0.24 balanced accuracy** (random guessing ≈ 0.25) — phone
-  movement cannot separate REM/Deep/Light without heart-rate data. Shows the model's
-  validation metrics and confusion matrix, and lets you **upload your own night**.
-- **Early version: Binary classification** — The original model that answers the *easier*
-  question, **asleep vs. awake**. This one genuinely works well on the coarse in-bed labels
-  it was built for. You can also **upload your own night** here.
+  Health sleep stages** (Awake / Light / Deep / REM). Its headline result: using phone motion 
+  alone, 4-stage classification scores about **0.24 balanced accuracy** (random guessing ≈ 0.25) 
+  — confirming that fine sleep stages cannot be reliably distinguished from movement data 
+  alone without additional signals like heart rate.Shows the model's validation metrics 
+  and confusion matrix, and lets you **upload your own night**.
+- **Sleep phases** — A polished demo dashboard for 4-stage visualization. This mode uses 
+  heuristic pseudo-labels generated at runtime and is intended for illustration only, 
+  not as validated predictions.
 - **ℹ️ About** — A plain-language page explaining the views and how to read the charts.
+
+Note: The online version runs on compressed demo data, which slightly reduces feature quality. 
+For the best results with your own recordings, run the app locally.
 
 A couple of caveats for the online version: both analysis modes run on a GitHub-friendly,
 compressed `.joblib` demo night (used only for validation, never for training), which
